@@ -168,13 +168,48 @@ the effects are interesting before fighting tracker noise.
   per-word attention, read front
 - [x] Phase 2: Erosion (blur / fade / rewrite / rewrite+blur), Living word
   (swap / scramble / decay), intensity slider, operator panel, simulated reader
-- [x] Phase 3 (built, **not yet tested with a real camera**): WebGazer source,
+- [x] Phase 3 (tested on a laptop's built-in camera): WebGazer source,
   hands-free calibration (visitor follows an ink dot: 13 training points, then
   5 validation points that measure accuracy), zone radius and fixation
   threshold tuned automatically from the measured error
 - [ ] Phases 4–6
 - [ ] Later: deploy online so the artist can try it. It's a static site (any
   static host works; https is required for the camera).
+
+### First camera results (laptop built-in webcam, glasses)
+
+- Two bugs in how WebGazer was used are fixed. Its 50-sample training buffer
+  dropped most of the calibration, and its ridge regularisation (1e-5 on raw
+  pixels) overfits. Lambda is now chosen per calibration by
+  leave-one-dot-out cross-validation.
+- Result after the fixes: about **260 px** median error on validation dots. On
+  the same calibration WebGazer's default scored about 660 px. That's still
+  too coarse for line-level effects: it tells the top, middle and bottom of the
+  page apart.
+- Results vary a lot between calibrations. Lighting, glasses reflections and
+  head movement are the likely factors.
+
+## 8. Backlog
+
+- **Tobii Eye Tracker 5** (being discussed with the artist): infrared, works
+  with glasses, accurate to about one line of text. Needs a small local bridge
+  program that passes its gaze data to the page. This is the likely route if
+  webcam accuracy stays around 200+ px.
+- **MediaPipe tracker:** a new `GazeSource` built on MediaPipe Face Landmarker
+  (iris centres relative to eye corners, eye openness, head pose → about
+  10–15 features → tuned ridge regression). It should be more stable and better
+  with glasses than WebGazer's raw eye pixels. Estimate: about a day of work.
+- **Save session:** a button that downloads calibration data (features plus dot
+  positions) as a file, so trackers can be tuned and compared offline.
+- **Gallery flow:** a shorter calibration (about 9 dots, no or brief accuracy
+  check), automatic reset and recalibration when no face is seen for N seconds,
+  and intro and calibration text written with the artist.
+- **Implicit recalibration while reading:** use return sweeps (end of line →
+  start of next) as extra calibration points. Experimental.
+- **Designs for coarse gaze:** erosion by paragraph or region, larger type and
+  fewer lines, and "living passage" instead of living word.
+- **Physical setup:** an external webcam at eye level, even light on the face
+  from the front, and a fixed seat or chin rest.
 
 ### WebGazer notes
 
