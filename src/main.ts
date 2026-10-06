@@ -139,7 +139,7 @@ async function main(): Promise<void> {
         settings.zoneRadius = Math.round(Math.max(40, Math.min(200, errorPx * 0.5)));
         controls.sync('zoneRadius');
         const tuned = tuning
-          ? ` · tuned model; untuned would be ≈ ±${Math.round(tuning.defaultErrorPx)} px on the training dots`
+          ? ` · leave-one-dot-out test: tuned ±${Math.round(tuning.errorPx)} px vs WebGazer default ±${Math.round(tuning.defaultErrorPx)} px`
           : '';
         controls.setStatus(`Webcam accuracy ≈ ±${Math.round(errorPx)} px (zone radius ${settings.zoneRadius}px)${tuned}`);
         overlay.note = `webcam ±${Math.round(errorPx)} px`;
