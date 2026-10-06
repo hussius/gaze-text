@@ -4,6 +4,12 @@ import type { GazeSource, SampleListener } from './types';
 const WEBGAZER_DIR = `${import.meta.env.BASE_URL}webgazer`;
 
 /**
+ * WebGazer's regression keeps only the last 50 calibration samples, which
+ * silently discards most of a full calibration. Room for this many instead.
+ */
+const TRAINING_SAMPLES = 300;
+
+/**
  * Webcam gaze via WebGazer. The library (TensorFlow.js + MediaPipe, ~2 MB plus
  * model files) is only loaded when this source is first started. It's the
  * prebuilt script copied to public/ by scripts/copy-webgazer.mjs.
@@ -42,6 +48,7 @@ export class WebGazerSource implements GazeSource {
       wg.removeMouseEventListeners();
       wg.showPredictionPoints(false);
       this.wg = wg;
+      this.enlargeTrainingWindow();
       this.showCamera(false);
     } else {
       await this.wg.resume();
@@ -66,6 +73,18 @@ export class WebGazerSource implements GazeSource {
   /** Forget all calibration (between visitors). */
   async clearCalibration(): Promise<void> {
     await this.wg?.clearData();
+    // clearData re-initialises the regression with its default 50-sample window
+    this.enlargeTrainingWindow();
+  }
+
+  private enlargeTrainingWindow(): void {
+    if (!this.wg) return;
+    const { DataWindow } = this.wg.util;
+    for (const reg of this.wg.getRegression()) {
+      for (const key of ['screenXClicksArray', 'screenYClicksArray', 'eyeFeaturesClicks', 'dataClicks']) {
+        reg[key] = new DataWindow(TRAINING_SAMPLES);
+      }
+    }
   }
 
   /** Camera preview with face-position feedback, used while the visitor gets into place. */

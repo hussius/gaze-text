@@ -28,6 +28,8 @@ declare module 'webgazer' {
     showPredictionPoints(show: boolean): WebGazer;
     removeMouseEventListeners(): WebGazer;
     getCurrentPrediction(): Promise<GazePrediction | null>;
+    getRegression(): Record<string, unknown>[];
+    util: { DataWindow: new (size: number) => unknown };
   }
 
   const webgazer: WebGazer;
