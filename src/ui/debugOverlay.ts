@@ -7,6 +7,8 @@ export class DebugOverlay {
   private canvas = document.createElement('canvas');
   private ctx = this.canvas.getContext('2d')!;
   visible = false;
+  /** Extra text for the corner label, e.g. the last calibration accuracy. */
+  note = '';
 
   constructor() {
     this.canvas.className = 'debug-overlay';
@@ -58,26 +60,24 @@ export class DebugOverlay {
     // zone words
     for (const { index, weight } of model.zone) {
       const r = renderer.words[index].rect;
-      c.strokeStyle = `rgba(200,40,40,${weight * 0.6})`;
+      c.strokeStyle = `rgba(200,40,40,${weight * 0.3})`;
       c.strokeRect(r.left - 1, r.top, r.width + 2, r.height);
     }
 
+    const note = this.note ? `${this.note}  · ` : '';
     if (!model.gazeActive) {
-      label(c, 'gaze lost', 12, 20);
+      label(c, `${note}gaze lost`, 12, 20);
       return;
     }
-    // raw sample, smoothed point, fixation
-    dot(c, gaze.rawX, gaze.rawY, 3, 'rgba(0,0,0,0.3)');
-    dot(c, gaze.x, gaze.y, 6, 'rgba(200,40,40,0.8)');
+    // smoothed gaze point (red), ringed while fixating (blue); kept faint so it doesn't pull the eye
+    dot(c, gaze.x, gaze.y, 3, 'rgba(200,40,40,0.45)');
     if (gaze.fixating) {
-      c.strokeStyle = 'rgba(40,80,200,0.7)';
-      c.lineWidth = 2;
+      c.strokeStyle = 'rgba(40,80,200,0.3)';
       c.beginPath();
-      c.arc(gaze.fixX, gaze.fixY, 10 + Math.min(30, gaze.fixDuration / 20), 0, Math.PI * 2);
+      c.arc(gaze.fixX, gaze.fixY, 9, 0, Math.PI * 2);
       c.stroke();
-      c.lineWidth = 1;
     }
-    label(c, `front: line ${model.readFront + 1}/${renderer.lines.length}${gaze.fixating ? '  · fixating' : ''}`, 12, 20);
+    label(c, `${note}front: line ${model.readFront + 1}/${renderer.lines.length}${gaze.fixating ? '  · fixating' : ''}`, 12, 20);
   }
 }
 

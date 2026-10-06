@@ -132,15 +132,17 @@ async function main(): Promise<void> {
     calibrating = true;
     controls.setStatus('Calibrating…');
     try {
-      const { errorPx } = await calibration.run();
+      const { errorPx } = await calibration.run(controls.visible || settings.debug);
       webcamErrorPx = errorPx;
       if (Number.isFinite(errorPx)) {
         // the gaze zone should roughly cover the tracker's error
         settings.zoneRadius = Math.round(Math.max(40, Math.min(200, errorPx * 0.5)));
         controls.sync('zoneRadius');
         controls.setStatus(`Webcam accuracy ≈ ±${Math.round(errorPx)} px (zone radius set to ${settings.zoneRadius}px)`);
+        overlay.note = `webcam ±${Math.round(errorPx)} px`;
       } else {
         controls.setStatus('No face seen during the accuracy check. Recalibrate (K).');
+        overlay.note = 'webcam: no face during check';
       }
     } catch (err) {
       controls.setStatus(err instanceof Error ? err.message : String(err));

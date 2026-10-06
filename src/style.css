@@ -185,5 +185,5 @@ body.calibrating #webgazerVideoContainer {
   box-shadow: 0 0 0 1px var(--paper-edge), 0 6px 24px rgba(0, 0, 0, 0.18);
 }
 
-.controls .status { margin: 4px 0 8px; opacity: 0.8; }
+.controls .status { margin: 4px 0 8px; padding: 6px 8px; border-radius: 4px; background: #5a4a1a; color: #ffe9a8; }
 .controls .status:empty { display: none; }

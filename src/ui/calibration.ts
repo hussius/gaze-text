@@ -43,7 +43,8 @@ export class Calibration {
     source.onSample((s) => this.samples?.push(s));
   }
 
-  async run(): Promise<CalibrationResult> {
+  /** `showResult`: print the measured accuracy on the closing card (for the operator). */
+  async run(showResult = false): Promise<CalibrationResult> {
     this.aborted = false;
     document.body.append(this.overlay);
     document.body.classList.add('calibrating');
@@ -80,7 +81,8 @@ export class Calibration {
       }
       // no predictions at all during validation means the face was lost
       const errorPx = errors.length > 0 ? median(errors) : Infinity;
-      await this.outro();
+      console.info(`calibration: median error ${Math.round(errorPx)} px`, errors.map(Math.round));
+      await this.outro(showResult ? errorPx : null);
       return { errorPx };
     } finally {
       window.removeEventListener('keydown', onKey);
@@ -126,9 +128,15 @@ export class Calibration {
     this.source.showCamera(false);
   }
 
-  private async outro(): Promise<void> {
-    this.overlay.innerHTML = '<div class="calibration-card"><p class="calibration-title">Thank you.</p></div>';
-    await this.wait(1200);
+  private async outro(errorPx: number | null): Promise<void> {
+    let detail = '';
+    if (errorPx !== null) {
+      detail = Number.isFinite(errorPx)
+        ? `<p class="calibration-hint">Tracking accuracy about ±${Math.round(errorPx)} px</p>`
+        : '<p class="calibration-hint">No face was seen during the accuracy check. Press K to try again.</p>';
+    }
+    this.overlay.innerHTML = `<div class="calibration-card"><p class="calibration-title">Thank you.</p>${detail}</div>`;
+    await this.wait(errorPx !== null ? 3500 : 1200);
   }
 
   /** Map a fraction of the text area to viewport coordinates (slightly beyond its edges). */
