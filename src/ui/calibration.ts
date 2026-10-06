@@ -1,9 +1,12 @@
 import type { WebGazerSource } from '../gaze/webgazerSource';
 import type { GazeSample } from '../gaze/types';
+import type { TuningResult } from '../gaze/ridgeTuning';
 
 export interface CalibrationResult {
   /** Median distance between predicted and true gaze on the validation dots, px. */
   errorPx: number;
+  /** Regularisation chosen from the training dots, or null if it couldn't be tuned. */
+  tuning: TuningResult | null;
 }
 
 /** Fractions of the text area used for training: a 3×3 grid plus an inner 2×2, in a snake order. */
@@ -68,6 +71,14 @@ export class Calibration {
         }
       }
 
+      const tuning = this.source.tuneRegularization();
+      if (tuning) {
+        console.info(
+          `calibration: ridge lambda ${tuning.lambda} (held-out error ${Math.round(tuning.errorPx)} px; ` +
+            `WebGazer default would give ${Math.round(tuning.defaultErrorPx)} px)`,
+        );
+      }
+
       const errors: number[] = [];
       for (const p of VALIDATE_POINTS) {
         const { x, y } = this.place(p);
@@ -83,7 +94,7 @@ export class Calibration {
       const errorPx = errors.length > 0 ? median(errors) : Infinity;
       console.info(`calibration: median error ${Math.round(errorPx)} px`, errors.map(Math.round));
       await this.outro(showResult ? errorPx : null);
-      return { errorPx };
+      return { errorPx, tuning };
     } finally {
       window.removeEventListener('keydown', onKey);
       this.samples = null;

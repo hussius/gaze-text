@@ -1,5 +1,6 @@
 import type { WebGazer } from 'webgazer';
 import type { GazeSource, SampleListener } from './types';
+import { tuneLambda, type TrainingSample, type TuningResult } from './ridgeTuning';
 
 const WEBGAZER_DIR = `${import.meta.env.BASE_URL}webgazer`;
 
@@ -77,6 +78,24 @@ export class WebGazerSource implements GazeSource {
     this.enlargeTrainingWindow();
   }
 
+  /**
+   * Choose the regression's regularisation from the calibration data just
+   * collected (see ridgeTuning.ts). Call after training, before validating.
+   */
+  tuneRegularization(): TuningResult | null {
+    if (!this.wg) return null;
+    const regs = this.wg.getRegression() as unknown as RidgeInternals[];
+    const reg = regs[0];
+    if (!reg) return null;
+    const feats = reg.eyeFeaturesClicks.data;
+    const xs = reg.screenXClicksArray.data;
+    const ys = reg.screenYClicksArray.data;
+    const samples: TrainingSample[] = feats.map((features, i) => ({ features, x: xs[i][0], y: ys[i][0] }));
+    const result = tuneLambda(samples);
+    if (result) for (const r of regs) r.ridgeParameter = result.lambda;
+    return result;
+  }
+
   private enlargeTrainingWindow(): void {
     if (!this.wg) return;
     const { DataWindow } = this.wg.util;
@@ -108,4 +127,12 @@ function loadWebGazer(): Promise<WebGazer> {
     script.onerror = () => reject(new Error(`could not load ${script.src} (run npm install)`));
     document.head.append(script);
   });
+}
+
+/** The fields of WebGazer's ridge regression object that tuning reads and writes. */
+interface RidgeInternals {
+  ridgeParameter: number;
+  eyeFeaturesClicks: { data: number[][] };
+  screenXClicksArray: { data: number[][] };
+  screenYClicksArray: { data: number[][] };
 }
