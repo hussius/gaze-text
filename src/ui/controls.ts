@@ -2,7 +2,7 @@ import type { ErosionStyle } from '../effects/erosion';
 import type { MutationStyle } from '../effects/livingWord';
 
 export type Mode = 'erosion' | 'living' | 'both' | 'off';
-export type SourceKind = 'mouse' | 'simulated';
+export type SourceKind = 'mouse' | 'simulated' | 'webcam';
 
 export interface Settings {
   mode: Mode;
@@ -48,6 +48,7 @@ function saveSettings(s: Settings): void {
 interface Handlers {
   onChange(s: Settings, key: keyof Settings): void;
   onReset(): void;
+  onCalibrate(): void;
 }
 
 /** Operator panel. Hidden for visitors; toggle with C. */
@@ -58,7 +59,7 @@ export class Controls {
   constructor(private settings: Settings, private handlers: Handlers) {
     this.panel.className = 'controls';
     this.panel.innerHTML = `
-      <h2>Controls <small>C hide · D debug · R reset · F fullscreen</small></h2>
+      <h2>Controls <small>C hide · D debug · R reset · K calibrate · F fullscreen</small></h2>
       <label>Mode
         <select data-key="mode">
           <option value="erosion">Erosion of the past</option>
@@ -86,12 +87,15 @@ export class Controls {
         <select data-key="source">
           <option value="mouse">Mouse</option>
           <option value="simulated">Simulated reader</option>
+          <option value="webcam">Webcam (WebGazer)</option>
         </select></label>
+      <p class="status"></p>
       <label>Simulated webcam noise <output data-for="noise"></output>
         <input data-key="noise" type="range" min="0" max="120" step="1"></label>
       <label>Gaze zone radius <output data-for="zoneRadius"></output>
         <input data-key="zoneRadius" type="range" min="20" max="200" step="1"></label>
       <label class="row"><input data-key="debug" type="checkbox"> Debug overlay</label>
+      <button type="button" data-action="calibrate">Calibrate webcam</button>
       <button type="button" data-action="reset">Reset page</button>
     `;
     document.body.append(this.panel);
@@ -112,6 +116,7 @@ export class Controls {
       this.showValue(key);
     }
     this.panel.querySelector('[data-action="reset"]')!.addEventListener('click', () => this.handlers.onReset());
+    this.panel.querySelector('[data-action="calibrate"]')!.addEventListener('click', () => this.handlers.onCalibrate());
   }
 
   /** Reflect a setting changed elsewhere (e.g. a keyboard shortcut). */
@@ -119,6 +124,10 @@ export class Controls {
     const input = this.panel.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-key="${key}"]`);
     if (input) this.write(input, key);
     saveSettings(this.settings);
+  }
+
+  setStatus(text: string): void {
+    this.panel.querySelector('.status')!.textContent = text;
   }
 
   toggle(): void {

@@ -168,8 +168,27 @@ the effects are interesting before fighting tracker noise.
   per-word attention, read front
 - [x] Phase 2: Erosion (blur / fade / rewrite / rewrite+blur), Living word
   (swap / scramble / decay), intensity slider, operator panel, simulated reader
-- [ ] Phase 3: WebGazer + calibration screen
+- [x] Phase 3 (built, **not yet tested with a real camera**): WebGazer source,
+  hands-free calibration (visitor follows an ink dot: 13 training points, then
+  5 validation points that measure accuracy), zone radius and fixation
+  threshold tuned automatically from the measured error
 - [ ] Phases 4–6
+- [ ] Later: deploy online so the artist can try it. It's a static site (any
+  static host works; https is required for the camera).
+
+### WebGazer notes
+
+- It is loaded at runtime from `public/webgazer/` (copied from the npm package by
+  `scripts/copy-webgazer.mjs` on `npm install`), together with Google's
+  MediaPipe Face Mesh model files. Nothing is fetched from the internet.
+- WebGazer's own training from mouse clicks and movement is disabled, and
+  calibration data is not persisted. Each visitor starts clean.
+- **License:** WebGazer is GPLv3 (LGPLv3 for organisations valued under $1M).
+  That's fine for an art installation. If it's published online, its source
+  should stay available. Linking to this repo or to WebGazer's repo covers it.
+- Glasses: face finding is robust, but reflections on lenses degrade the eye
+  images. Keep lamps out of the lenses' reflection and compare the measured
+  accuracy for visitors with and without glasses.
 
 ### Running
 
@@ -177,4 +196,5 @@ the effects are interesting before fighting tracker noise.
     npm run dev        # http://localhost:5173
 
 Keys: **C** toggles the operator panel, **D** the debug overlay, **R** resets the
-page, **F** toggles fullscreen. Settings persist in the browser.
+page, **K** recalibrates the webcam, **F** toggles fullscreen. Settings persist in
+the browser. Use Chrome on `localhost` for the camera.

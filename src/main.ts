@@ -6,6 +6,7 @@ import { GazeFilter } from './gaze/filter';
 import { MouseSource } from './gaze/mouseSource';
 import { WebcamNoise } from './gaze/noise';
 import { SimulatedReader } from './gaze/simulatedReader';
+import { WebGazerSource } from './gaze/webgazerSource';
 import type { GazeSource } from './gaze/types';
 import { Erosion } from './effects/erosion';
 import { LivingWord } from './effects/livingWord';
@@ -13,6 +14,7 @@ import type { Effect } from './effects/types';
 import { ReadingModel } from './reading/model';
 import { placeholder } from './text/content';
 import { TextRenderer } from './text/renderer';
+import { Calibration } from './ui/calibration';
 import { Controls, loadSettings, type Settings } from './ui/controls';
 import { DebugOverlay } from './ui/debugOverlay';
 
@@ -35,12 +37,29 @@ async function main(): Promise<void> {
 
   const noise = new WebcamNoise();
   const filter = new GazeFilter();
+  const webcam = new WebGazerSource();
   const sources: Record<Settings['source'], GazeSource> = {
     mouse: new MouseSource(noise),
     simulated: new SimulatedReader(renderer, noise),
+    webcam,
   };
-  for (const s of Object.values(sources)) s.onSample((sample) => filter.push(sample));
+  let calibrating = false;
+  /** Median validation error of the last webcam calibration, px. */
+  let webcamErrorPx: number | null = null;
+  for (const s of Object.values(sources)) {
+    s.onSample((sample) => {
+      if (!calibrating) filter.push(sample);
+    });
+  }
   let source = sources[settings.source];
+
+  const textArea = () => {
+    const { lines } = renderer;
+    const left = Math.min(...lines.map((l) => l.left));
+    const right = Math.max(...lines.map((l) => l.right));
+    return new DOMRect(left, lines[0].top, right - left, lines[lines.length - 1].bottom - lines[0].top);
+  };
+  const calibration = new Calibration(webcam, textArea);
 
   const effects = (): { on: Effect[]; off: Effect[] } => {
     const on: Effect[] = [];
@@ -54,18 +73,38 @@ async function main(): Promise<void> {
     living.style = settings.mutationStyle;
     noise.amount = settings.noise;
     // noisier signal → looser fixation detection
-    filter.dispersionPx = 90 + settings.noise * 2.5;
+    const noisePx = settings.source === 'webcam' ? Math.min(webcamErrorPx ?? 100, 300) * 0.4 : settings.noise;
+    filter.dispersionPx = 90 + noisePx * 2.5;
     model.params.zoneRadius = settings.zoneRadius;
     overlay.visible = settings.debug;
-    if (key === 'source') {
-      source.stop();
-      source = sources[settings.source];
-      reset();
-    }
+    if (key === 'source') void switchSource();
   };
 
-  const reset = () => {
+  const startSource = async () => {
+    try {
+      await source.start();
+    } catch (err) {
+      console.error(err);
+      controls.setStatus(`Webcam unavailable: ${err instanceof Error ? err.message : err}. Back to mouse.`);
+      settings.source = 'mouse';
+      controls.sync('source');
+      source = sources.mouse;
+      apply();
+      await source.start();
+      return false;
+    }
+    return true;
+  };
+
+  const switchSource = async () => {
     source.stop();
+    source = sources[settings.source];
+    controls.setStatus(settings.source === 'webcam' ? 'Starting webcam…' : '');
+    clearPage();
+    if ((await startSource()) && settings.source === 'webcam') await calibrate();
+  };
+
+  const clearPage = () => {
     filter.reset();
     model.reset();
     for (const e of [erosion, living]) {
@@ -73,19 +112,58 @@ async function main(): Promise<void> {
       e.clear({ renderer });
     }
     renderer.resetEffects();
-    source.start();
+  };
+
+  const reset = () => {
+    clearPage();
+    // the simulated reader restarts from the top; the others just keep streaming
+    if (source === sources.simulated) {
+      source.stop();
+      void source.start();
+    }
+  };
+
+  const calibrate = async () => {
+    if (settings.source !== 'webcam') {
+      controls.setStatus('Calibration needs the webcam source.');
+      return;
+    }
+    if (calibrating) return;
+    calibrating = true;
+    controls.setStatus('Calibrating…');
+    try {
+      const { errorPx } = await calibration.run();
+      webcamErrorPx = errorPx;
+      if (Number.isFinite(errorPx)) {
+        // the gaze zone should roughly cover the tracker's error
+        settings.zoneRadius = Math.round(Math.max(40, Math.min(200, errorPx * 0.5)));
+        controls.sync('zoneRadius');
+        controls.setStatus(`Webcam accuracy ≈ ±${Math.round(errorPx)} px (zone radius set to ${settings.zoneRadius}px)`);
+      } else {
+        controls.setStatus('No face seen during the accuracy check. Recalibrate (K).');
+      }
+    } catch (err) {
+      controls.setStatus(err instanceof Error ? err.message : String(err));
+    } finally {
+      calibrating = false;
+      apply();
+      clearPage();
+    }
   };
 
   const controls = new Controls(settings, {
     onChange: (_s, key) => apply(key),
     onReset: reset,
+    onCalibrate: () => void calibrate(),
   });
   apply();
-  source.start();
+  void switchSource();
 
   window.addEventListener('keydown', (e) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+    if (calibrating) return;
     switch (e.key.toLowerCase()) {
+      case 'k': void calibrate(); break;
       case 'c': controls.toggle(); break;
       case 'd':
         settings.debug = !settings.debug;
@@ -111,7 +189,7 @@ async function main(): Promise<void> {
     }, 150);
   });
 
-  if (import.meta.env.DEV) Object.assign(window, { app: { settings, renderer, model, filter, erosion, living } });
+  if (import.meta.env.DEV) Object.assign(window, { app: { settings, renderer, model, filter, erosion, living, webcam } });
 
   let last = performance.now();
   const frame = (now: number) => {

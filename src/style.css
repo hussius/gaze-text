@@ -123,3 +123,67 @@ body.operator-hidden { cursor: none; }
 .controls output { float: right; opacity: 0.7; }
 .controls hr { border: 0; border-top: 1px solid #444; margin: 10px 0; }
 .controls button { width: 100%; padding: 6px; margin-top: 4px; cursor: pointer; }
+
+/* ---- calibration ---- */
+
+.calibration {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(243, 238, 226, 0.97);
+  color: var(--ink);
+  font-family: 'EB Garamond', Garamond, serif;
+  cursor: none;
+}
+
+.calibration-card {
+  max-width: 30em;
+  text-align: center;
+  font-size: clamp(18px, 2.4vh, 28px);
+  line-height: 1.5;
+  /* leave room for the camera preview above */
+  margin-top: 34vh;
+}
+.calibration-title { font-style: italic; font-size: 1.4em; margin-bottom: 0.4em; }
+.calibration-hint { color: var(--ink-soft); font-size: 0.75em; letter-spacing: 0.08em; margin-top: 2em; }
+
+.calibration-dot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0;
+}
+.calibration-dot.visible {
+  animation: ink-blot 1.6s ease-out forwards;
+}
+.calibration-dot.hollow {
+  background: transparent;
+  border: 3px solid var(--ink);
+}
+@keyframes ink-blot {
+  0% { opacity: 0; scale: 2.2; }
+  20% { opacity: 1; scale: 1; }
+  100% { opacity: 1; scale: 0.45; }
+}
+
+/* WebGazer's camera preview, centred above the intro text while calibrating */
+body.calibrating #webgazerVideoContainer {
+  top: 8vh !important;
+  left: 50% !important;
+  translate: -50% 0;
+  z-index: 40 !important;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--paper-edge), 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+.controls .status { margin: 4px 0 8px; opacity: 0.8; }
+.controls .status:empty { display: none; }
