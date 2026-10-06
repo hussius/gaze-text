@@ -69,15 +69,25 @@ export class DebugOverlay {
       label(c, `${note}gaze lost`, 12, 20);
       return;
     }
-    // smoothed gaze point (red), ringed while fixating (blue); kept faint so it doesn't pull the eye
-    dot(c, gaze.x, gaze.y, 3, 'rgba(200,40,40,0.45)');
+    // smoothed gaze point (red), ringed while fixating (blue)
+    const offscreen = gaze.x < 0 || gaze.y < 0 || gaze.x > innerWidth || gaze.y > innerHeight;
+    if (offscreen) {
+      // pin a marker to the screen edge in the direction of the estimate
+      const ex = Math.min(innerWidth - 8, Math.max(8, gaze.x));
+      const ey = Math.min(innerHeight - 8, Math.max(8, gaze.y));
+      dot(c, ex, ey, 8, 'rgba(200,40,40,0.35)');
+    } else {
+      dot(c, gaze.x, gaze.y, 7, 'rgba(255,255,255,0.6)');
+      dot(c, gaze.x, gaze.y, 5, 'rgba(200,40,40,0.7)');
+    }
     if (gaze.fixating) {
       c.strokeStyle = 'rgba(40,80,200,0.3)';
       c.beginPath();
       c.arc(gaze.fixX, gaze.fixY, 9, 0, Math.PI * 2);
       c.stroke();
     }
-    label(c, `${note}front: line ${model.readFront + 1}/${renderer.lines.length}${gaze.fixating ? '  · fixating' : ''}`, 12, 20);
+    const where = offscreen ? '  · gaze off screen' : gaze.fixating ? '  · fixating' : '';
+    label(c, `${note}front: line ${model.readFront + 1}/${renderer.lines.length}${where}`, 12, 20);
   }
 }
 
