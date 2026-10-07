@@ -109,7 +109,10 @@ export class WebGazerSource implements GazeSource {
   /** Camera preview with face-position feedback, used while the visitor gets into place. */
   showCamera(show: boolean): void {
     if (!this.wg) return;
-    this.wg.showVideoPreview(show).showFaceOverlay(show).showFaceFeedbackBox(show);
+    // showVideoPreview(true) alone won't bring the video back: hiding it also
+    // stored showVideo=false, which showVideoPreview then respects. Set each part.
+    this.wg.showVideoPreview(show).showVideo(show).showFaceOverlay(show).showFaceFeedbackBox(show);
+    if (show) this.wg.setVideoViewerSize(400, 300);
   }
 }
 

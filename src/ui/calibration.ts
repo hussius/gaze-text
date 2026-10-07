@@ -110,7 +110,8 @@ export class Calibration {
       <div class="calibration-card">
         <p class="calibration-title">Before you read</p>
         <p>Sit comfortably, about an arm’s length from the screen,<br>
-           with your face inside the frame.</p>
+           with your face inside the square in the camera image above.<br>
+           The square turns green when you are in place.</p>
         <p>A small mark will move across the page.<br>Follow it with your eyes.</p>
         <p class="calibration-hint">Press the space bar or click to begin</p>
       </div>`;

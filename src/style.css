@@ -144,8 +144,12 @@ body.operator-hidden { cursor: none; }
   text-align: center;
   font-size: clamp(18px, 2.4vh, 28px);
   line-height: 1.5;
-  /* leave room for the camera preview above */
-  margin-top: 34vh;
+  /* sits below the camera preview (8vh from the top, 300px tall) */
+  position: absolute;
+  top: calc(8vh + 320px);
+  left: 50%;
+  translate: -50% 0;
+  width: 90%;
 }
 .calibration-title { font-style: italic; font-size: 1.4em; margin-bottom: 0.4em; }
 .calibration-hint { color: var(--ink-soft); font-size: 0.75em; letter-spacing: 0.08em; margin-top: 2em; }

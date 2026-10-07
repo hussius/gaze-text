@@ -26,6 +26,7 @@ declare module 'webgazer' {
     showFaceOverlay(show: boolean): WebGazer;
     showFaceFeedbackBox(show: boolean): WebGazer;
     showPredictionPoints(show: boolean): WebGazer;
+    setVideoViewerSize(width: number, height: number): WebGazer;
     removeMouseEventListeners(): WebGazer;
     getCurrentPrediction(): Promise<GazePrediction | null>;
     getRegression(): Record<string, unknown>[];
