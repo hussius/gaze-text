@@ -188,6 +188,14 @@ the effects are interesting before fighting tracker noise.
   page apart.
 - Results vary a lot between calibrations. Lighting, glasses reflections and
   head movement are the likely factors.
+- 2026-10-07, daylight, same laptop camera. Accuracy / leave-one-dot-out:
+  - **with glasses:** 232 px, then over 300 px;
+  - **without glasses:** 126 / 127, 229 / 130 and 155 / 130 px.
+
+  Without glasses the model is a steady ~130 px. The 229 px run most likely
+  had head movement between calibration and the check. **Glasses roughly
+  double the error**, which is the main argument for an infrared tracker
+  (Tobii), since many visitors wear glasses.
 
 ## 8. Backlog
 
